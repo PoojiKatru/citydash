@@ -1,27 +1,27 @@
 extends Node2D
 
-const PELLET_POINTS := 10
-const POWER_POINTS := 50
+const PARCEL_POINTS := 10
+const COFFEE_POINTS := 50
 const START_LIVES := 3
-const CATCH_DISTANCE := 18.0
-const FRIGHT_TIME := 7.0
-const GHOST_POINTS := [200, 400, 800, 1600]
+const CRASH_DISTANCE := 18.0
+const PULLOVER_TIME := 7.0
+const BUMP_POINTS := [200, 400, 800, 1600]
 
-const GHOST_SCRIPT := preload("res://scripts/ghost.gd")
-const GHOST_COLORS := [Color("f2c200"), Color("e8e8ec"), Color("3b6ee0"), Color("e07b2a")]
-const GHOST_CORNERS := [Vector2i(17, 1), Vector2i(1, 1), Vector2i(17, 19), Vector2i(1, 19)]
-const GHOST_DELAYS := [0.0, 2.0, 5.0, 8.0]
+const CAR_SCRIPT := preload("res://scripts/car.gd")
+const CAR_COLORS := [Color("f2c200"), Color("e8e8ec"), Color("3b6ee0"), Color("e07b2a")]
+const CAR_CORNERS := [Vector2i(17, 1), Vector2i(1, 1), Vector2i(17, 19), Vector2i(1, 19)]
+const CAR_DELAYS := [0.0, 2.0, 5.0, 8.0]
 
 @onready var board: Node2D = $Board
-@onready var maze: Node2D = $Board/Maze
-@onready var player: Node2D = $Board/Player
+@onready var city: Node2D = $Board/City
+@onready var courier: Node2D = $Board/Courier
 @onready var score_label: Label = $HUD/Score
 @onready var lives_label: Label = $HUD/Lives
 @onready var message_label: Label = $HUD/Message
 
 var score := 0
 var lives := START_LIVES
-var ghosts: Array[Node2D] = []
+var cars: Array[Node2D] = []
 var running := false
 var finished := false
 var combo := 0
@@ -29,98 +29,98 @@ var combo := 0
 
 func _ready() -> void:
 	_register_wasd()
-	maze.reset_pellets()
-	maze.pellets_cleared.connect(_on_maze_cleared)
-	player.entered_cell.connect(_on_player_entered_cell)
-	_spawn_ghosts()
+	city.reset_parcels()
+	city.all_collected.connect(_on_all_delivered)
+	courier.entered_cell.connect(_on_courier_entered_cell)
+	_spawn_cars()
 	_reset_positions()
 	_update_hud()
-	await _get_ready()
+	await _start_shift()
 
 
-func _spawn_ghosts() -> void:
-	var spawns := MazeData.find_all("G")
+func _spawn_cars() -> void:
+	var spawns := CityData.find_all("G")
 	for i in spawns.size():
-		var ghost := Node2D.new()
-		ghost.set_script(GHOST_SCRIPT)
-		ghost.personality = i
-		ghost.body_color = GHOST_COLORS[i % GHOST_COLORS.size()]
-		ghost.home_corner = GHOST_CORNERS[i % GHOST_CORNERS.size()]
-		ghost.release_delay = GHOST_DELAYS[i % GHOST_DELAYS.size()]
-		ghost.start_cell = spawns[i]
-		ghost.player = player
-		board.add_child(ghost)
-		ghosts.append(ghost)
+		var car := Node2D.new()
+		car.set_script(CAR_SCRIPT)
+		car.personality = i
+		car.body_color = CAR_COLORS[i % CAR_COLORS.size()]
+		car.patrol_corner = CAR_CORNERS[i % CAR_CORNERS.size()]
+		car.release_delay = CAR_DELAYS[i % CAR_DELAYS.size()]
+		car.start_cell = spawns[i]
+		car.courier = courier
+		board.add_child(car)
+		cars.append(car)
 
 
 func _reset_positions() -> void:
-	player.spawn_at(MazeData.find_all("P")[0])
-	for ghost in ghosts:
-		ghost.spawn()
+	courier.spawn_at(CityData.find_all("P")[0])
+	for car in cars:
+		car.spawn()
 
 
 func _process(_delta: float) -> void:
 	if not running:
 		return
-	for ghost in ghosts:
-		if not ghost.is_catchable():
+	for car in cars:
+		if not car.is_on_the_road():
 			continue
-		if player.position.distance_to(ghost.position) >= CATCH_DISTANCE:
+		if courier.position.distance_to(car.position) >= CRASH_DISTANCE:
 			continue
-		if ghost.is_frightened():
-			_eat_ghost(ghost)
+		if car.is_pulled_over():
+			_bump_car(car)
 		else:
-			_lose_life()
+			_crash()
 			return
 
 
-func _on_player_entered_cell(cell: Vector2i) -> void:
-	match maze.eat(cell):
+func _on_courier_entered_cell(cell: Vector2i) -> void:
+	match city.collect(cell):
 		".":
-			score += PELLET_POINTS
+			score += PARCEL_POINTS
 		"o":
-			score += POWER_POINTS
+			score += COFFEE_POINTS
 			combo = 0
-			for ghost in ghosts:
-				ghost.frighten(FRIGHT_TIME)
+			for car in cars:
+				car.pull_over(PULLOVER_TIME)
 		_:
 			return
 	_update_hud()
 
 
-func _eat_ghost(ghost: Node2D) -> void:
-	ghost.get_eaten()
-	score += GHOST_POINTS[mini(combo, GHOST_POINTS.size() - 1)]
+func _bump_car(car: Node2D) -> void:
+	car.tow()
+	score += BUMP_POINTS[mini(combo, BUMP_POINTS.size() - 1)]
 	combo += 1
 	_update_hud()
 
 
-func _lose_life() -> void:
+func _crash() -> void:
 	lives -= 1
 	running = false
 	_set_entities_active(false)
 	_update_hud()
 
 	if lives <= 0:
-		_finish("GAME OVER")
+		_finish("SHIFT OVER")
 		return
 
-	message_label.text = "CAUGHT!"
+	message_label.text = "CRASHED!"
 	await get_tree().create_timer(1.2).timeout
 	_reset_positions()
-	await _get_ready()
+	await _start_shift()
 
 
-func _on_maze_cleared() -> void:
+func _on_all_delivered() -> void:
 	running = false
 	_set_entities_active(false)
-	_finish("YOU WIN!")
+	_finish("ALL DELIVERED!")
 
 
-func _get_ready() -> void:
+func _start_shift() -> void:
 	running = false
 	_set_entities_active(false)
-	message_label.text = "READY!"
+	message_label.text = "GO!"
 	await get_tree().create_timer(1.5).timeout
 	message_label.text = ""
 	_set_entities_active(true)
@@ -138,14 +138,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _set_entities_active(active: bool) -> void:
-	player.set_process(active)
-	for ghost in ghosts:
-		ghost.set_process(active)
+	courier.set_process(active)
+	for car in cars:
+		car.set_process(active)
 
 
 func _update_hud() -> void:
-	score_label.text = "SCORE %d" % score
-	lives_label.text = "LIVES %d" % lives
+	score_label.text = "CASH $%d" % score
+	lives_label.text = "SCOOTERS %d" % lives
 
 
 # The arrow keys come from Godot's built-in ui_* actions; add WASD on top

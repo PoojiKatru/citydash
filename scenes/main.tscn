@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://ss16u7wb64np"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="Script" path="res://scripts/maze.gd" id="2_maze"]
-[ext_resource type="Script" path="res://scripts/player.gd" id="3_player"]
+[ext_resource type="Script" path="res://scripts/city.gd" id="2_city"]
+[ext_resource type="Script" path="res://scripts/courier.gd" id="3_courier"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -10,11 +10,11 @@ script = ExtResource("1_main")
 [node name="Board" type="Node2D" parent="."]
 position = Vector2(0, 48)
 
-[node name="Maze" type="Node2D" parent="Board"]
-script = ExtResource("2_maze")
+[node name="City" type="Node2D" parent="Board"]
+script = ExtResource("2_city")
 
-[node name="Player" type="Node2D" parent="Board"]
-script = ExtResource("3_player")
+[node name="Courier" type="Node2D" parent="Board"]
+script = ExtResource("3_courier")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -24,7 +24,7 @@ offset_top = 12.0
 offset_right = 300.0
 offset_bottom = 38.0
 theme_override_font_sizes/font_size = 18
-text = "SCORE 0"
+text = "CASH $0"
 
 [node name="Lives" type="Label" parent="HUD"]
 offset_left = 360.0
@@ -32,7 +32,7 @@ offset_top = 12.0
 offset_right = 658.0
 offset_bottom = 38.0
 theme_override_font_sizes/font_size = 18
-text = "LIVES 3"
+text = "SCOOTERS 3"
 horizontal_alignment = 2
 
 [node name="Message" type="Label" parent="HUD"]

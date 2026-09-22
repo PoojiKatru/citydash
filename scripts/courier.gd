@@ -25,7 +25,7 @@ func spawn_at(start: Vector2i) -> void:
 	dir = Vector2i.ZERO
 	next_dir = Vector2i.ZERO
 	_facing = 0.0
-	position = MazeData.cell_to_world(start)
+	position = CityData.cell_to_world(start)
 	queue_redraw()
 
 
@@ -53,7 +53,7 @@ func _read_input() -> void:
 		return
 
 	if dir != Vector2i.ZERO and wanted == -dir:
-		# Doubling back works mid-corridor, the way the arcade does it.
+		# A U-turn can be pulled off mid-street, not just at a junction.
 		var swap := cell
 		cell = to_cell
 		to_cell = swap
@@ -70,7 +70,7 @@ func _move(step: float) -> void:
 			return
 
 	while step > 0.0:
-		var target := MazeData.cell_to_world(to_cell)
+		var target := CityData.cell_to_world(to_cell)
 		var to_target := target - position
 		var dist := to_target.length()
 		if dist > step:
@@ -84,8 +84,8 @@ func _move(step: float) -> void:
 
 
 func _arrive() -> void:
-	cell = MazeData.wrap_cell(to_cell)
-	position = MazeData.cell_to_world(cell)
+	cell = CityData.wrap_cell(to_cell)
+	position = CityData.cell_to_world(cell)
 	to_cell = cell
 	entered_cell.emit(cell)
 	_pick_direction()
@@ -94,10 +94,10 @@ func _arrive() -> void:
 # At a tile centre: take the queued turn if it is open, otherwise keep going
 # straight, otherwise stop against the wall.
 func _pick_direction() -> void:
-	if next_dir != Vector2i.ZERO and not MazeData.is_wall(cell + next_dir):
+	if next_dir != Vector2i.ZERO and not CityData.is_blocked(cell + next_dir):
 		dir = next_dir
 		next_dir = Vector2i.ZERO
-	if dir == Vector2i.ZERO or MazeData.is_wall(cell + dir):
+	if dir == Vector2i.ZERO or CityData.is_blocked(cell + dir):
 		dir = Vector2i.ZERO
 		to_cell = cell
 		return

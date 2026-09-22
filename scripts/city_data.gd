@@ -1,7 +1,7 @@
 extends RefCounted
-class_name MazeData
+class_name CityData
 
-# One place for the maze shape so every script agrees on it.
+# One place for the city shape so every script agrees on it.
 #   #  building
 #   .  street with a parcel on it
 #   o  coffee stand
@@ -50,7 +50,7 @@ static func wrap_cell(cell: Vector2i) -> Vector2i:
 	return Vector2i(wrapi(cell.x, 0, COLS), cell.y)
 
 
-static func is_wall(cell: Vector2i) -> bool:
+static func is_blocked(cell: Vector2i) -> bool:
 	var c := cell_at(wrap_cell(cell))
 	return c == "#" or c == "="
 
