@@ -3,7 +3,12 @@ extends Node2D
 signal entered_cell(cell: Vector2i)
 
 const SPEED := 150.0
-const COLOR := Color("ffe600")
+const BODY := Color("e63946")
+const RIDER := Color("caff2f")
+const HELMET := Color("f4f4f4")
+const HEADLIGHT := Color("fff6c0")
+const CARGO := Color("f0602a")
+const CARGO_EDGE := Color("7a2f12")
 
 var cell: Vector2i       # the tile we are standing on / just left
 var to_cell: Vector2i    # the tile we are sliding into (== cell when stopped)
@@ -11,7 +16,7 @@ var dir := Vector2i.ZERO
 var next_dir := Vector2i.ZERO
 
 var _facing := 0.0
-var _mouth := 0.0
+var _wobble := 0.0
 
 
 func spawn_at(start: Vector2i) -> void:
@@ -29,7 +34,7 @@ func _process(delta: float) -> void:
 	_move(SPEED * delta)
 	if dir != Vector2i.ZERO:
 		_facing = Vector2(dir).angle()
-		_mouth = fmod(_mouth + delta * 10.0, TAU)
+		_wobble = fmod(_wobble + delta * 14.0, TAU)
 	queue_redraw()
 
 
@@ -100,12 +105,26 @@ func _pick_direction() -> void:
 
 
 func _draw() -> void:
-	var radius := MazeData.TILE * 0.42
-	# Keep a little mouth open while standing still.
-	var gap: float = 0.35 if dir == Vector2i.ZERO else absf(sin(_mouth)) * 0.55
-	var wedge := PackedVector2Array([Vector2.ZERO])
-	var steps := 24
-	for i in steps + 1:
-		var a := lerpf(_facing + gap, _facing + TAU - gap, float(i) / steps)
-		wedge.append(Vector2(cos(a), sin(a)) * radius)
-	draw_colored_polygon(wedge, COLOR)
+	# A scooter seen from above, leaning very slightly as it rides.
+	var lean := sin(_wobble) * 1.5 if dir != Vector2i.ZERO else 0.0
+	var t := Transform2D(_facing, Vector2(0.0, lean))
+	var hull := PackedVector2Array([
+		Vector2(14.0, 0.0), Vector2(7.0, -6.0), Vector2(-9.0, -5.0),
+		Vector2(-12.0, 0.0), Vector2(-9.0, 5.0), Vector2(7.0, 6.0),
+	])
+	for i in hull.size():
+		hull[i] = t * hull[i]
+	draw_colored_polygon(hull, BODY)
+
+	# the delivery box strapped on the back
+	var crate := PackedVector2Array([
+		Vector2(-10.0, -4.0), Vector2(-3.0, -4.0), Vector2(-3.0, 4.0), Vector2(-10.0, 4.0),
+	])
+	for i in crate.size():
+		crate[i] = t * crate[i]
+	draw_colored_polygon(crate, CARGO)
+	draw_polyline(crate + PackedVector2Array([crate[0]]), CARGO_EDGE, 1.0)
+
+	draw_circle(t * Vector2(1.0, 0.0), 4.0, RIDER)
+	draw_circle(t * Vector2(4.5, 0.0), 2.6, HELMET)
+	draw_circle(t * Vector2(12.0, 0.0), 1.8, HEADLIGHT)

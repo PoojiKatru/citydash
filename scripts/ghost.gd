@@ -6,6 +6,12 @@ const SPEED := 120.0
 const FRIGHT_SPEED := 75.0
 const EATEN_SPEED := 280.0
 
+const CABIN := Color("1d2330")
+const HEADLIGHT := Color("fff6c0")
+const TAILLIGHT := Color("ff4a3d")
+const HAZARD := Color("ffb02e")
+const WRECK := Color("50505c")
+
 # Set by main.gd before the ghost is added to the board.
 var personality := 0
 var body_color := Color.RED
@@ -177,40 +183,59 @@ func _target_cell() -> Vector2i:
 
 
 func _draw() -> void:
-	var r := MazeData.TILE * 0.42
+	var heading := Vector2(dir).angle() if dir != Vector2i.ZERO else 0.0
+	var t := Transform2D(heading, Vector2(0.0, sin(_bob) * 0.8))
+
 	if state == State.EATEN:
-		_draw_eyes(r)
+		_draw_towed(t)
 		return
 
-	var skin := body_color
-	if state == State.FRIGHTENED:
+	var paint := body_color
+	var pulled_over := state == State.FRIGHTENED
+	if pulled_over:
 		var flashing := _fright_left < 2.0 and fmod(_fright_left, 0.4) < 0.2
-		skin = Color.WHITE if flashing else Color("2121de")
+		paint = Color("d8d8dd") if flashing else Color("4a4a55")
 
-	var body := PackedVector2Array()
-	var arc_steps := 16
-	for i in arc_steps + 1:
-		var a := lerpf(PI, TAU, float(i) / arc_steps)
-		body.append(Vector2(cos(a), sin(a)) * r)
+	var hull := PackedVector2Array([
+		Vector2(14.0, -4.0), Vector2(14.0, 4.0), Vector2(9.0, 7.0),
+		Vector2(-11.0, 7.0), Vector2(-13.0, 4.0), Vector2(-13.0, -4.0),
+		Vector2(-11.0, -7.0), Vector2(9.0, -7.0),
+	])
+	for i in hull.size():
+		hull[i] = t * hull[i]
+	draw_colored_polygon(hull, paint)
 
-	var hem := r * 0.85
-	body.append(Vector2(r, hem))
-	var feet := 6
-	for i in range(1, feet + 1):
-		var x := lerpf(r, -r, float(i) / feet)
-		body.append(Vector2(x, hem - (5.0 if i % 2 == 1 else 0.0)))
-	draw_colored_polygon(body, skin)
+	# windscreen and roof, so the car reads as facing somewhere
+	_draw_box(t, Vector2(3.0, 0.0), Vector2(4.0, 4.5), CABIN)
+	_draw_box(t, Vector2(-6.5, 0.0), Vector2(3.5, 4.5), paint.darkened(0.3))
 
-	if state == State.FRIGHTENED:
-		draw_circle(Vector2(-r * 0.3, -r * 0.15), r * 0.14, Color.WHITE)
-		draw_circle(Vector2(r * 0.3, -r * 0.15), r * 0.14, Color.WHITE)
+	if pulled_over:
+		for corner in [Vector2(12.0, -5.0), Vector2(12.0, 5.0), Vector2(-11.0, -5.0), Vector2(-11.0, 5.0)]:
+			draw_circle(t * corner, 2.2, HAZARD)
 	else:
-		_draw_eyes(r)
+		draw_circle(t * Vector2(13.0, -4.0), 2.0, HEADLIGHT)
+		draw_circle(t * Vector2(13.0, 4.0), 2.0, HEADLIGHT)
+		draw_circle(t * Vector2(-12.0, -4.0), 1.8, TAILLIGHT)
+		draw_circle(t * Vector2(-12.0, 4.0), 1.8, TAILLIGHT)
 
 
-func _draw_eyes(r: float) -> void:
-	var look := Vector2(dir) * r * 0.14
-	for side in [-1.0, 1.0]:
-		var centre := Vector2(side * r * 0.33, -r * 0.15)
-		draw_circle(centre, r * 0.28, Color.WHITE)
-		draw_circle(centre + look, r * 0.13, Color("2121de"))
+# Once bumped, the car is a dead chassis being hauled back to the depot.
+func _draw_towed(t: Transform2D) -> void:
+	var hull := PackedVector2Array([
+		Vector2(10.0, -5.0), Vector2(10.0, 5.0),
+		Vector2(-10.0, 5.0), Vector2(-10.0, -5.0),
+	])
+	for i in hull.size():
+		hull[i] = t * hull[i]
+	draw_colored_polygon(hull, WRECK)
+	draw_circle(t * Vector2(0.0, 0.0), 2.5, HAZARD)
+
+
+func _draw_box(t: Transform2D, centre: Vector2, half: Vector2, tint: Color) -> void:
+	var box := PackedVector2Array([
+		centre + Vector2(-half.x, -half.y), centre + Vector2(half.x, -half.y),
+		centre + Vector2(half.x, half.y), centre + Vector2(-half.x, half.y),
+	])
+	for i in box.size():
+		box[i] = t * box[i]
+	draw_colored_polygon(box, tint)

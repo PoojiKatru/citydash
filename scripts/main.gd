@@ -8,7 +8,7 @@ const FRIGHT_TIME := 7.0
 const GHOST_POINTS := [200, 400, 800, 1600]
 
 const GHOST_SCRIPT := preload("res://scripts/ghost.gd")
-const GHOST_COLORS := [Color("ff0000"), Color("ffb8ff"), Color("00ffff"), Color("ffb852")]
+const GHOST_COLORS := [Color("f2c200"), Color("e8e8ec"), Color("3b6ee0"), Color("e07b2a")]
 const GHOST_CORNERS := [Vector2i(17, 1), Vector2i(1, 1), Vector2i(17, 19), Vector2i(1, 19)]
 const GHOST_DELAYS := [0.0, 2.0, 5.0, 8.0]
 
