@@ -101,7 +101,8 @@ func _pick_direction() -> void:
 
 func _draw() -> void:
 	var radius := MazeData.TILE * 0.42
-	var gap: float = absf(sin(_mouth)) * 0.55
+	# Keep a little mouth open while standing still.
+	var gap: float = 0.35 if dir == Vector2i.ZERO else absf(sin(_mouth)) * 0.55
 	var wedge := PackedVector2Array([Vector2.ZERO])
 	var steps := 24
 	for i in steps + 1:
