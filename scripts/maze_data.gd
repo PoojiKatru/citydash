@@ -46,12 +46,12 @@ static func cell_at(cell: Vector2i) -> String:
 
 
 # The tunnel row wraps around, so x is allowed to run off either edge.
-static func wrap(cell: Vector2i) -> Vector2i:
+static func wrap_cell(cell: Vector2i) -> Vector2i:
 	return Vector2i(wrapi(cell.x, 0, COLS), cell.y)
 
 
 static func is_wall(cell: Vector2i) -> bool:
-	var c := cell_at(wrap(cell))
+	var c := cell_at(wrap_cell(cell))
 	return c == "#" or c == "="
 
 

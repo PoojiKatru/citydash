@@ -1,8 +1,11 @@
 extends Node2D
 
+@onready var player: Node2D = $Board/Player
+
 
 func _ready() -> void:
 	_register_wasd()
+	player.spawn_at(MazeData.find_all("P")[0])
 
 
 # The arrow keys come from Godot's built-in ui_* actions; add WASD on top
