@@ -2,40 +2,40 @@ extends RefCounted
 class_name MazeData
 
 # One place for the maze shape so every script agrees on it.
-#   #  wall
-#   .  pellet
-#   o  power pellet
-#   =  ghost house door
-#   P  player spawn
-#   G  ghost spawn
-#      (space) empty floor
+#   #  building
+#   .  street with a parcel on it
+#   o  coffee stand
+#   =  depot shutter
+#   P  courier spawn
+#   G  taxi spawn
+#      (space) plain road, no parcel
 
 const TILE := 32
-const COLS := 19
+const COLS := 21
 const ROWS := 21
 
 const LAYOUT := [
-	"###################",
-	"#........#........#",
-	"#o##.###.#.###.##o#",
-	"#.................#",
-	"#.##.#.#####.#.##.#",
-	"#....#...#...#....#",
-	"####.### # ###.####",
-	"   #.#   G   #.#   ",
-	"####.# ##=## #.####",
-	"    .  #GGG#  .    ",
-	"####.# ##### #.####",
-	"   #.#       #.#   ",
-	"####.# ##### #.####",
-	"#........#........#",
-	"#.##.###.#.###.##.#",
-	"#o.#.....P.....#.o#",
-	"##.#.#.#####.#.#.##",
-	"#....#...#...#....#",
-	"#.######.#.######.#",
-	"#.................#",
-	"###################",
+	"#####################",
+	"#o.................o#",
+	"#.###.####.####.###.#",
+	"#.###...........###.#",
+	"#.###.####.####.###.#",
+	"#...................#",
+	"#.#.#.####.####.#.#.#",
+	"#.#.#.####.####.#.#.#",
+	"#.#.#.####G####.#.#.#",
+	"#.#.#.####=####.#.#.#",
+	" .......#GGG#....... ",
+	"#.#.#.#########.#.#.#",
+	"#.#.#.####.####.#.#.#",
+	"#.#.#.####.####.#.#.#",
+	"#.#.#.####.####.#.#.#",
+	"#.........P.........#",
+	"#.###.####.####.###.#",
+	"#.###...........###.#",
+	"#.###.####.####.###.#",
+	"#o.................o#",
+	"#####################",
 ]
 
 
@@ -45,7 +45,7 @@ static func cell_at(cell: Vector2i) -> String:
 	return LAYOUT[cell.y][cell.x]
 
 
-# The tunnel row wraps around, so x is allowed to run off either edge.
+# The underpass row wraps around, so x is allowed to run off either edge.
 static func wrap_cell(cell: Vector2i) -> Vector2i:
 	return Vector2i(wrapi(cell.x, 0, COLS), cell.y)
 
