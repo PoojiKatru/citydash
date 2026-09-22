@@ -51,7 +51,9 @@ func is_catchable() -> bool:
 
 
 func frighten(seconds: float) -> void:
-	if state == State.EATEN or state == State.HOUSE:
+	# Ghosts still squeezing out of the house are left alone: the door is
+	# one-way, so turning one around there would trap it inside for good.
+	if state == State.EATEN or state == State.HOUSE or state == State.LEAVING:
 		return
 	_fright_left = seconds
 	if state != State.FRIGHTENED:

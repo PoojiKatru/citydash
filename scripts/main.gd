@@ -4,6 +4,8 @@ const PELLET_POINTS := 10
 const POWER_POINTS := 50
 const START_LIVES := 3
 const CATCH_DISTANCE := 18.0
+const FRIGHT_TIME := 7.0
+const GHOST_POINTS := [200, 400, 800, 1600]
 
 const GHOST_SCRIPT := preload("res://scripts/ghost.gd")
 const GHOST_COLORS := [Color("ff0000"), Color("ffb8ff"), Color("00ffff"), Color("ffb852")]
@@ -21,16 +23,19 @@ var score := 0
 var lives := START_LIVES
 var ghosts: Array[Node2D] = []
 var running := false
+var finished := false
+var combo := 0
 
 
 func _ready() -> void:
 	_register_wasd()
 	maze.reset_pellets()
+	maze.pellets_cleared.connect(_on_maze_cleared)
 	player.entered_cell.connect(_on_player_entered_cell)
 	_spawn_ghosts()
 	_reset_positions()
 	_update_hud()
-	running = true
+	await _get_ready()
 
 
 func _spawn_ghosts() -> void:
@@ -58,7 +63,13 @@ func _process(_delta: float) -> void:
 	if not running:
 		return
 	for ghost in ghosts:
-		if ghost.is_catchable() and player.position.distance_to(ghost.position) < CATCH_DISTANCE:
+		if not ghost.is_catchable():
+			continue
+		if player.position.distance_to(ghost.position) >= CATCH_DISTANCE:
+			continue
+		if ghost.is_frightened():
+			_eat_ghost(ghost)
+		else:
 			_lose_life()
 			return
 
@@ -69,8 +80,18 @@ func _on_player_entered_cell(cell: Vector2i) -> void:
 			score += PELLET_POINTS
 		"o":
 			score += POWER_POINTS
+			combo = 0
+			for ghost in ghosts:
+				ghost.frighten(FRIGHT_TIME)
 		_:
 			return
+	_update_hud()
+
+
+func _eat_ghost(ghost: Node2D) -> void:
+	ghost.get_eaten()
+	score += GHOST_POINTS[mini(combo, GHOST_POINTS.size() - 1)]
+	combo += 1
 	_update_hud()
 
 
@@ -81,15 +102,39 @@ func _lose_life() -> void:
 	_update_hud()
 
 	if lives <= 0:
-		message_label.text = "GAME OVER"
+		_finish("GAME OVER")
 		return
 
 	message_label.text = "CAUGHT!"
 	await get_tree().create_timer(1.2).timeout
-	message_label.text = ""
 	_reset_positions()
+	await _get_ready()
+
+
+func _on_maze_cleared() -> void:
+	running = false
+	_set_entities_active(false)
+	_finish("YOU WIN!")
+
+
+func _get_ready() -> void:
+	running = false
+	_set_entities_active(false)
+	message_label.text = "READY!"
+	await get_tree().create_timer(1.5).timeout
+	message_label.text = ""
 	_set_entities_active(true)
 	running = true
+
+
+func _finish(text: String) -> void:
+	finished = true
+	message_label.text = text + "\nPRESS SPACE"
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if finished and event.is_action_pressed("ui_accept"):
+		get_tree().reload_current_scene()
 
 
 func _set_entities_active(active: bool) -> void:
